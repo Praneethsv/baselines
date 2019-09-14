@@ -110,6 +110,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
 
     if load_path is not None:
         model.load(load_path)
+        print('**Model loaded**: ', load_path)
     # Instantiate the runner object
     runner = Runner(env=env, model=model, nsteps=nsteps, gamma=gamma, lam=lam)
     if eval_env is not None:
