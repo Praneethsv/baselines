@@ -7,6 +7,8 @@ from baselines.sac.epoch_logger import EpochLogger
 from baselines.common import set_global_seeds
 from baselines.sac.memory import ReplayBuffer
 from baselines.sac.model import mlp_actor_critic
+from baselines import logger as baselines_logger
+
 
 def learn(env, sac_network=mlp_actor_critic,
           seed=None,
@@ -22,6 +24,7 @@ def learn(env, sac_network=mlp_actor_critic,
           max_ep_len=1000,
           ac_kwargs=dict(),
           save_freq=1,
+          model_load_path=None,
           **network_kwargs):
 
     set_global_seeds(seed)
@@ -97,6 +100,12 @@ def learn(env, sac_network=mlp_actor_critic,
     logger.setup_tf_saver(sess, inputs={'x': x_ph, 'a': a_ph},
                           outputs={'mu': mu, 'pi': pi, 'q1': q1, 'q2': q2, 'v': v})
 
+    # def _tf_simple_load(sess, path=None):
+    #     baselines_logger.info('Model is being loaded: ', path)
+    #     tf.saved_model.load(sess, tags=['serve'], export_dir=path)
+    # if model_load_path is not None:
+    #     _tf_simple_load(sess, model_load_path)
+
     def get_action(o, deterministic=False):
         act_op = mu if deterministic else pi
         return sess.run(act_op, feed_dict={x_ph: o.reshape(1, -1)})[0]
@@ -115,7 +124,6 @@ def learn(env, sac_network=mlp_actor_critic,
     start_time = time.time()
     o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
     total_steps = steps_per_epoch * epochs
-
 
     for t in range(total_steps):
 
@@ -194,3 +202,17 @@ def learn(env, sac_network=mlp_actor_critic,
             logger.log_tabular('LossV', average_only=True)
             logger.log_tabular('Time', str(time.time() - start_time))
             logger.dump_tabular()
+
+            baselines_logger.logkv('misc/epoch', epoch)
+
+    model = {'x_ph': x_ph,
+             'mu':mu,
+             'pi':pi,
+             'logp_pi': logp_pi,
+             'q1':q1,
+             'q2':q2,
+             'q1_pi':q1_pi,
+             'q2_pi': q2_pi,
+             'v':v,
+             'target_init': target_init}
+    return model

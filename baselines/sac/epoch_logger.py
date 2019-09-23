@@ -6,6 +6,7 @@ import shutil
 import tensorflow as tf
 import os.path as osp, time, atexit, os
 from baselines.sac.utils import proc_id, convert_json
+from baselines import logger as baselines_logger
 
 color2num = dict(
     gray=30,
@@ -175,7 +176,8 @@ class Logger:
             tf.saved_model.simple_save(export_dir=fpath, **self.tf_saver_elements)
             joblib.dump(self.tf_saver_info, osp.join(fpath, 'model_info.pkl'))
 
-    def dump_tabular(self):
+
+    def dump_tabular(self, baselines_log=False):
         """
         Write all of the diagnostics from the current iteration.
         Writes both to stdout, and to the output file.
@@ -193,6 +195,8 @@ class Logger:
                 valstr = "%8.3g" % val if hasattr(val, "__float__") else val
                 print(fmt % (key, valstr))
                 vals.append(val)
+                if baselines_log:
+                    baselines_logger.logkv(key, val)
             print("-" * n_slashes)
             if self.output_file is not None:
                 if self.first_row:

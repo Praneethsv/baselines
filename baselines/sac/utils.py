@@ -100,3 +100,19 @@ def mpi_statistics_scalar(x, with_min_and_max=False):
         global_max = mpi_op(np.max(x) if len(x) > 0 else -np.inf, op=MPI.MAX)
         return mean, std, global_min, global_max
     return mean, std
+
+
+def test_agent(sess, test_env, model, n=100, max_ep_len=1000):
+    def get_action(o, deterministic=False):
+        act_op = model['mu'] if deterministic else model['pi']
+        return sess.run(act_op, feed_dict={model['x_ph']: o.reshape(1, -1)})[0]
+
+    for j in range(n):
+        o, r, d, ep_ret, ep_len = test_env.reset(), 0, False, 0, 0
+        print(o)
+        while not (d or (ep_len == max_ep_len)):
+            # Take deterministic actions at test time
+            o, r, d, _ = test_env.step(get_action(o, True))
+            print(o)
+            ep_ret += r
+            ep_len += 1
